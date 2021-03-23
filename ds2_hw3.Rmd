@@ -64,7 +64,20 @@ confusionMatrix(data = as.factor(pred), reference = test$Direction, positive = "
 
 * Specificity = 0.7209 [True Negative/(True Negative + False Positive)], 72.09% of true negatives are correctly identified.
 
+# Part C. 
 
+```{r}
+glm_fit2 = glm(Direction ~ Lag1 + Lag2, data = train, family = binomial)
+summary(glm_fit2)
+
+###Plot the ROC curve using the test data and report the AUC
+glm2_prob = predict(glm_fit2, newdata = test, type = "response")
+roc = roc(test$Direction, glm2_prob)
+plot(roc, legacy.axes = TRUE, print.auc = TRUE)
+plot(smooth(roc), col = 4, add = TRUE)
+```
+
+From the ROC curve, AUC = 0.556.
 
 
 
