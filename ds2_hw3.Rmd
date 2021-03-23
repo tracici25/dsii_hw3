@@ -23,8 +23,8 @@ summary(Weekly)
 transparentTheme(trans = .4)
 featurePlot(x = Weekly[, 1:8], 
             y = Weekly$Direction,
-            scales = list(x=list(relation="free"), 
-                        y=list(relation="free")),
+            scales = list(x = list(relation = "free"), 
+                          y = list(relation = "free")),
             plot = "density", pch = "|", 
             auto.key = list(columns = 2)) # density plot
 pairs(Weekly) # pairs scatterplot
@@ -35,12 +35,12 @@ pairs(Weekly) # pairs scatterplot
 
 ```{r}
 train = Weekly %>% 
-  filter(Year %in% c(1990:2008))
+  filter(Year <= 2008)
 test = Weekly %>% 
-  filter(Year %in% c(2009,2010))
+  filter(Year > 2008)
 glm_fit = glm(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, 
-               data = train,
-               family = binomial)
+              data = train,
+              family = binomial)
 summary(glm_fit)
 ```
 
@@ -79,7 +79,53 @@ plot(smooth(roc), col = 4, add = TRUE)
 
 From the ROC curve, AUC = 0.556.
 
+# Part D. 
 
+## LDA
+```{r}
+lda_fit = lda(Direction ~ Lag1 + Lag2, data = train)
+lda_pred = predict(lda_fit, newdata = test)
+roc_lda = roc(test$Direction, lda_pred$posterior[,2], levels = c("Down", "Up"))
+plot(roc_lda, legacy.axes = TRUE, print.auc = TRUE)
+plot(smooth(roc_lda), col = 4, add = TRUE)
+```
 
+LDA AUC = 0.557.
 
+## QDA
+```{r}
+qda_fit = qda(Direction ~ Lag1 + Lag2, data = train)
+qda_pred = predict(qda_fit, newdata = test)
+roc_qda = roc(test$Direction, qda_pred$posterior[,2], levels = c("Down", "Up"))
+plot(roc_qda, legacy.axes = TRUE, print.auc = TRUE)
+plot(smooth(roc_qda), col = 4, add = TRUE)
+###AUC is 0.529
+```
+
+QDA AUC = 0.529.
+
+# Part E.
+
+```{r}
+set.seed(1)
+ctrl = trainControl(method = "repeatedcv",
+                    repeats = 5,
+                    summaryFunction = twoClassSummary,
+                    classProbs = TRUE)
+fit_knn <- train(x = train[2:3],
+                 y = train$Direction,
+                 method = "knn",
+                 preProcess = c("center", "scale"),
+                 tuneGrid = data.frame(k = seq(1, 200, by = 5)),
+                 trControl = ctrl)
+summary(fit_knn)
+ggplot(fit_knn)
+fit_knn$bestTune
+knn_pred =  predict(fit_knn, newdata = test , type = "prob")
+roc_knn = roc(test$Direction, knn_pred$Down, levels = c("Down", "Up"))
+plot(roc_knn, legacy.axes = TRUE, print.auc = TRUE)
+plot(smooth(roc_knn), col = 4, add = TRUE)
+```
+
+The KNN AUC = 0.437. Comparing with GLM, LDA, QDA and KNN, LDA has the largest AUC, indicating LDA predicts the data best. Due to its high error, further investigation on better models is required.
 
